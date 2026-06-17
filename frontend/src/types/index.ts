@@ -171,3 +171,81 @@ export interface PerformanceInstrument {
   status: 'requested' | 'allocated' | 'returned'
   note?: string
 }
+
+export interface ReturnDispute {
+  id: number
+  disputeType: 'scratch' | 'missing_parts' | 'moisture' | 'pitch_abnormal' | 'other'
+  status: 'pending' | 'teacher_reviewing' | 'technician_quoting' | 'resolved' | 'closed'
+  description: string
+  photos?: string
+  returnCheckId?: number
+  instrumentId: number
+  instrumentName?: string
+  reservationId: number
+  registeredById: number
+  registeredByName?: string
+  teacherId?: number
+  teacherName?: string
+  performanceImpact?: 'affected' | 'not_affected' | 'needs_assessment'
+  teacherComment?: string
+  teacherReviewedAt?: string
+  technicianId?: number
+  technicianName?: string
+  repairQuote?: number
+  technicianComment?: string
+  technicianQuotedAt?: string
+  checkoutPhotos?: string
+  deductedAmount?: number
+  resolutionNote?: string
+  resolvedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BulkBorrowing {
+  id: number
+  name: string
+  programList?: string
+  rehearsalSchedule?: string
+  borrowingList?: string
+  status: 'draft' | 'pending_approval' | 'approved' | 'partially_approved' | 'rejected' | 'locked' | 'completed' | 'cancelled'
+  startTime: string
+  endTime: string
+  organizerId: number
+  organizerName?: string
+  performanceId?: number
+  performanceName?: string
+  approverId?: number
+  approverName?: string
+  approvedAt?: string
+  rejectReason?: string
+  notes?: string
+  items: BulkBorrowingItem[]
+  conflicts: BulkBorrowingConflict[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BulkBorrowingItem {
+  id: number
+  bulkBorrowingId: number
+  instrumentId?: number
+  instrumentName?: string
+  roomId?: number
+  roomName?: string
+  quantity: number
+  note?: string
+  locked: boolean
+}
+
+export interface BulkBorrowingConflict {
+  id: number
+  bulkBorrowingId: number
+  conflictType: 'instrument_unavailable' | 'instrument_in_repair' | 'instrument_sealed' | 'reservation_conflict' | 'room_conflict' | 'teacher_approval_required'
+  severity: 'warning' | 'error' | 'info'
+  description: string
+  instrumentId?: number
+  roomId?: number
+  suggestion?: string
+  resolved: boolean
+}

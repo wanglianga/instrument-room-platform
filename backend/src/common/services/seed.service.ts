@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { MainSeeder } from '../database/seeds/main.seeder';
+import { MainSeeder } from '../../database/seeds/main.seeder';
 
 @Injectable()
 export class SeedService implements OnModuleInit {

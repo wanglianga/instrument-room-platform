@@ -10,10 +10,12 @@ import ReservationList from '@/pages/reservations/ReservationList'
 import ReservationDetail from '@/pages/reservations/ReservationDetail'
 import AuditList from '@/pages/audit/AuditList'
 import ReturnCheck from '@/pages/return/ReturnCheck'
+import DisputeList from '@/pages/dispute/DisputeList'
 import MaintenanceList from '@/pages/maintenance/MaintenanceList'
 import RepairList from '@/pages/repair/RepairList'
 import CompensationList from '@/pages/compensation/CompensationList'
 import PerformanceList from '@/pages/performance/PerformanceList'
+import BulkBorrowingList from '@/pages/bulkBorrowing/BulkBorrowingList'
 import UserList from '@/pages/users/UserList'
 
 function App() {
@@ -35,10 +37,12 @@ function App() {
         <Route path="reservations/:id" element={<ReservationDetail />} />
         <Route path="audit" element={<AuditList />} />
         <Route path="return" element={<ReturnCheck />} />
+        <Route path="dispute" element={<DisputeList />} />
         <Route path="maintenance" element={<MaintenanceList />} />
         <Route path="repair" element={<RepairList />} />
         <Route path="compensation" element={<CompensationList />} />
         <Route path="performance" element={<PerformanceList />} />
+        <Route path="bulk-borrowing" element={<BulkBorrowingList />} />
         <Route path="users" element={<UserList />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -10,6 +10,8 @@ import {
   ExclamationCircleOutlined,
   TrophyOutlined,
   TeamOutlined,
+  WarningOutlined,
+  GroupOutlined,
 } from '@ant-design/icons'
 import type { UserRole } from '@/types'
 
@@ -55,6 +57,12 @@ const allMenus: MenuItemType[] = [
     roles: ['admin', 'technician'],
   },
   {
+    key: '/dispute',
+    icon: React.createElement(WarningOutlined),
+    label: '归还验收分歧',
+    roles: ['admin', 'teacher', 'technician', 'student'],
+  },
+  {
     key: '/maintenance',
     icon: React.createElement(ToolOutlined),
     label: '调音保养',
@@ -77,6 +85,12 @@ const allMenus: MenuItemType[] = [
     icon: React.createElement(TrophyOutlined),
     label: '演出调拨',
     roles: ['admin', 'performance_manager'],
+  },
+  {
+    key: '/bulk-borrowing',
+    icon: React.createElement(GroupOutlined),
+    label: '大型活动批量借用',
+    roles: ['admin', 'performance_manager', 'teacher'],
   },
   {
     key: '/users',

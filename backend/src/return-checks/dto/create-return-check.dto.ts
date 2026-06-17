@@ -30,4 +30,8 @@ export class CreateReturnCheckDto {
   @IsString()
   @IsOptional()
   photos?: string;
+
+  @IsString()
+  @IsOptional()
+  checkoutPhotos?: string;
 }

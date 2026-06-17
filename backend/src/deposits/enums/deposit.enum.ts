@@ -4,4 +4,5 @@ export enum DepositStatus {
   REFUNDING = 'refunding',
   REFUNDED = 'refunded',
   DEDUCTED = 'deducted',
+  FROZEN = 'frozen',
 }

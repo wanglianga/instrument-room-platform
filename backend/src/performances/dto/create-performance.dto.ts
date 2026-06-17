@@ -31,6 +31,14 @@ export class CreatePerformanceDto {
   @IsOptional()
   notes?: string;
 
+  @IsString()
+  @IsOptional()
+  programList?: string;
+
+  @IsString()
+  @IsOptional()
+  rehearsalSchedule?: string;
+
   @IsDateString()
   @IsOptional()
   setupStartTime?: string;

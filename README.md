@@ -242,6 +242,8 @@ wl-334/
 │   │   ├── reservations/       # 预约借用模块
 │   │   ├── deposits/           # 押金管理模块
 │   │   ├── return-checks/      # 归还检查模块
+│   │   ├── disputes/           # 归还验收分歧模块
+│   │   ├── bulk-borrowing/     # 大型活动批量借用模块
 │   │   ├── maintenance/        # 调音保养模块
 │   │   ├── damages/            # 损坏赔偿模块
 │   │   ├── performances/       # 演出调拨模块
@@ -258,6 +260,9 @@ wl-334/
 │   │   ├── api/                # API 接口定义
 │   │   ├── layouts/            # 布局组件
 │   │   ├── pages/              # 页面组件
+│   │   │   ├── dispute/        # 归还验收分歧页面
+│   │   │   ├── bulkBorrowing/  # 大型活动批量借用页面
+│   │   │   └── ...             # 其他页面
 │   │   ├── store/              # 状态管理
 │   │   ├── styles/             # 全局样式
 │   │   ├── types/              # TypeScript 类型

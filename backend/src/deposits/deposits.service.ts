@@ -105,6 +105,38 @@ export class DepositsService {
     return this.depositsRepository.save(deposit);
   }
 
+  async freezeDeposit(id: number, operatorId: number, remark?: string): Promise<Deposit> {
+    const deposit = await this.findOne(id);
+
+    if (deposit.status !== DepositStatus.PAID) {
+      throw new BadRequestException('当前状态无法冻结押金');
+    }
+
+    deposit.status = DepositStatus.FROZEN;
+    deposit.operatorId = operatorId;
+    if (remark) {
+      deposit.remark = remark;
+    }
+
+    return this.depositsRepository.save(deposit);
+  }
+
+  async unfreezeDeposit(id: number, operatorId: number, remark?: string): Promise<Deposit> {
+    const deposit = await this.findOne(id);
+
+    if (deposit.status !== DepositStatus.FROZEN) {
+      throw new BadRequestException('当前状态无法解冻押金');
+    }
+
+    deposit.status = DepositStatus.PAID;
+    deposit.operatorId = operatorId;
+    if (remark) {
+      deposit.remark = remark;
+    }
+
+    return this.depositsRepository.save(deposit);
+  }
+
   async deductDeposit(id: number, operatorId: number, remark?: string): Promise<Deposit> {
     const deposit = await this.findOne(id);
     

@@ -51,6 +51,9 @@ export class ReturnCheck {
   @Column({ type: 'text', nullable: true })
   photos: string;
 
+  @Column({ type: 'text', nullable: true })
+  checkoutPhotos: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

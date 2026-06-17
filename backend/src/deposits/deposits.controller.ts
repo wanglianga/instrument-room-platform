@@ -68,6 +68,18 @@ export class DepositsController {
     return this.depositsService.deductDeposit(+id, user.id, remark);
   }
 
+  @Patch(':id/freeze')
+  @Roles(UserRole.ADMIN)
+  freezeDeposit(@Param('id') id: string, @Body('remark') remark: string, @GetUser() user) {
+    return this.depositsService.freezeDeposit(+id, user.id, remark);
+  }
+
+  @Patch(':id/unfreeze')
+  @Roles(UserRole.ADMIN)
+  unfreezeDeposit(@Param('id') id: string, @Body('remark') remark: string, @GetUser() user) {
+    return this.depositsService.unfreezeDeposit(+id, user.id, remark);
+  }
+
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() updateDepositDto: UpdateDepositDto) {

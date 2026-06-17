@@ -48,6 +48,12 @@ export class Performance {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ type: 'text', nullable: true })
+  programList: string;
+
+  @Column({ type: 'text', nullable: true })
+  rehearsalSchedule: string;
+
   @Column({ type: 'timestamp', nullable: true })
   setupStartTime: Date;
 

@@ -10,6 +10,8 @@ import { ReturnChecksModule } from './return-checks/return-checks.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { DamagesModule } from './damages/damages.module';
 import { PerformancesModule } from './performances/performances.module';
+import { DisputesModule } from './disputes/disputes.module';
+import { BulkBorrowingModule } from './bulk-borrowing/bulk-borrowing.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { PerformancesModule } from './performances/performances.module';
     MaintenanceModule,
     DamagesModule,
     PerformancesModule,
+    DisputesModule,
+    BulkBorrowingModule,
   ],
   controllers: [],
   providers: [],
