@@ -9,6 +9,10 @@ import { UpdateBulkBorrowingDto } from './dto/update-bulk-borrowing.dto';
 import { BulkBorrowingStatus, ConflictType, ConflictSeverity } from './enums/bulk-borrowing.enum';
 import { ReservationStatus } from '../reservations/enums/reservation.enum';
 import { InstrumentStatus } from '../instruments/enums/instrument.enum';
+import { Instrument } from '../instruments/entities/instrument.entity';
+import { Reservation } from '../reservations/entities/reservation.entity';
+import { Room } from '../rooms/entities/room.entity';
+import { UserRole } from '../users/enums/user-role.enum';
 
 @Injectable()
 export class BulkBorrowingService {
@@ -19,6 +23,12 @@ export class BulkBorrowingService {
     private bulkBorrowingItemRepository: Repository<BulkBorrowingItem>,
     @InjectRepository(BulkBorrowingConflict)
     private bulkBorrowingConflictRepository: Repository<BulkBorrowingConflict>,
+    @InjectRepository(Instrument)
+    private instrumentRepository: Repository<Instrument>,
+    @InjectRepository(Reservation)
+    private reservationRepository: Repository<Reservation>,
+    @InjectRepository(Room)
+    private roomRepository: Repository<Room>,
   ) {}
 
   async create(createDto: CreateBulkBorrowingDto, organizerId: number): Promise<BulkBorrowing> {
@@ -58,66 +68,91 @@ export class BulkBorrowingService {
 
     for (const item of bulkBorrowing.items || []) {
       if (item.instrumentId) {
-        const instrument = item.instrument;
+        const instrument = await this.instrumentRepository.findOne({
+          where: { id: item.instrumentId },
+        });
 
-        if (instrument.status === InstrumentStatus.IN_REPAIR) {
-          const conflict = this.bulkBorrowingConflictRepository.create({
-            bulkBorrowingId: id,
-            conflictType: ConflictType.INSTRUMENT_IN_REPAIR,
-            severity: ConflictSeverity.ERROR,
-            description: `乐器"${instrument.name}"正在维修中，无法借用`,
-            instrumentId: item.instrumentId,
-            suggestion: '更换其他同类乐器或等待维修完成',
-          });
-          conflicts.push(conflict);
-        }
+        if (instrument) {
+          if (instrument.status === InstrumentStatus.IN_REPAIR) {
+            conflicts.push(this.bulkBorrowingConflictRepository.create({
+              bulkBorrowingId: id,
+              conflictType: ConflictType.INSTRUMENT_IN_REPAIR,
+              severity: ConflictSeverity.ERROR,
+              description: `乐器"${instrument.name}"正在维修中，无法借用`,
+              instrumentId: item.instrumentId,
+              suggestion: '更换其他同类乐器或等待维修完成',
+            }));
+          }
 
-        if (instrument.status === InstrumentStatus.SEALED) {
-          const conflict = this.bulkBorrowingConflictRepository.create({
-            bulkBorrowingId: id,
-            conflictType: ConflictType.INSTRUMENT_SEALED,
-            severity: ConflictSeverity.ERROR,
-            description: `乐器"${instrument.name}"已封存，无法借用`,
-            instrumentId: item.instrumentId,
-            suggestion: '联系管理员解除封存或更换乐器',
-          });
-          conflicts.push(conflict);
-        }
+          if (instrument.status === InstrumentStatus.SEALED) {
+            conflicts.push(this.bulkBorrowingConflictRepository.create({
+              bulkBorrowingId: id,
+              conflictType: ConflictType.INSTRUMENT_SEALED,
+              severity: ConflictSeverity.ERROR,
+              description: `乐器"${instrument.name}"已封存，无法借用`,
+              instrumentId: item.instrumentId,
+              suggestion: '联系管理员解除封存或更换乐器',
+            }));
+          }
 
-        if (instrument.status === InstrumentStatus.BORROWED) {
-          const conflict = this.bulkBorrowingConflictRepository.create({
-            bulkBorrowingId: id,
-            conflictType: ConflictType.INSTRUMENT_UNAVAILABLE,
-            severity: ConflictSeverity.WARNING,
-            description: `乐器"${instrument.name}"当前已被借出`,
-            instrumentId: item.instrumentId,
-            suggestion: '确认归还时间或更换乐器',
-          });
-          conflicts.push(conflict);
-        }
+          if (instrument.status === InstrumentStatus.BORROWED) {
+            conflicts.push(this.bulkBorrowingConflictRepository.create({
+              bulkBorrowingId: id,
+              conflictType: ConflictType.INSTRUMENT_UNAVAILABLE,
+              severity: ConflictSeverity.WARNING,
+              description: `乐器"${instrument.name}"当前已被借出`,
+              instrumentId: item.instrumentId,
+              suggestion: '确认归还时间或更换乐器',
+            }));
+          }
 
-        if (instrument.status === InstrumentStatus.IN_PERFORMANCE) {
-          const conflict = this.bulkBorrowingConflictRepository.create({
-            bulkBorrowingId: id,
-            conflictType: ConflictType.INSTRUMENT_UNAVAILABLE,
-            severity: ConflictSeverity.WARNING,
-            description: `乐器"${instrument.name}"正在演出使用中`,
-            instrumentId: item.instrumentId,
-            suggestion: '确认演出结束时间或更换乐器',
-          });
-          conflicts.push(conflict);
-        }
+          if (instrument.status === InstrumentStatus.IN_PERFORMANCE) {
+            conflicts.push(this.bulkBorrowingConflictRepository.create({
+              bulkBorrowingId: id,
+              conflictType: ConflictType.INSTRUMENT_UNAVAILABLE,
+              severity: ConflictSeverity.WARNING,
+              description: `乐器"${instrument.name}"正在演出使用中`,
+              instrumentId: item.instrumentId,
+              suggestion: '确认演出结束时间或更换乐器',
+            }));
+          }
 
-        const { Reservation } = require('../reservations/entities/reservation.entity');
-        const reservationConflict = await this.detectInstrumentReservationConflict(
-          item.instrumentId, startTime, endTime, id
-        );
-        if (reservationConflict) {
-          conflicts.push(reservationConflict);
+          if (instrument.value && parseFloat(instrument.value.toString()) > 5000) {
+            conflicts.push(this.bulkBorrowingConflictRepository.create({
+              bulkBorrowingId: id,
+              conflictType: ConflictType.TEACHER_APPROVAL_REQUIRED,
+              severity: ConflictSeverity.INFO,
+              description: `乐器"${instrument.name}"为贵重乐器（价值¥${instrument.value}），需指导老师审批`,
+              instrumentId: item.instrumentId,
+              suggestion: '已通知指导老师，待审批通过后可继续',
+            }));
+          }
+
+          const reservationConflict = await this.detectInstrumentReservationConflict(
+            item.instrumentId, startTime, endTime, id
+          );
+          if (reservationConflict) {
+            conflicts.push(reservationConflict);
+          }
         }
       }
 
       if (item.roomId) {
+        const room = await this.roomRepository.findOne({
+          where: { id: item.roomId },
+        });
+
+        if (room && !room.isActive) {
+          conflicts.push(this.bulkBorrowingConflictRepository.create({
+            bulkBorrowingId: id,
+            conflictType: ConflictType.ROOM_CONFLICT,
+            severity: ConflictSeverity.ERROR,
+            description: `琴房"${room.name}"当前已停用，无法使用`,
+            roomId: item.roomId,
+            suggestion: '更换其他琴房或联系管理员启用',
+          }));
+        }
+
         const roomConflict = await this.detectRoomConflict(
           item.roomId, startTime, endTime, id
         );
@@ -138,19 +173,39 @@ export class BulkBorrowingService {
   private async detectInstrumentReservationConflict(
     instrumentId: number,
     startTime: Date,
-    endTime: number | Date,
+    endTime: Date,
     excludeBulkId: number,
   ): Promise<BulkBorrowingConflict | null> {
-    const end = endTime instanceof Date ? endTime : new Date(endTime);
-    const conflictingReservation = await this.bulkBorrowingRepository.manager.getRepository('Reservation')
+    const conflictingReservation = await this.reservationRepository
       .createQueryBuilder('reservation')
       .where('reservation.instrumentId = :instrumentId', { instrumentId })
       .andWhere('reservation.status IN (:...statuses)', { statuses: [ReservationStatus.APPROVED, ReservationStatus.BORROWED] })
-      .andWhere('reservation.startTime < :endTime', { endTime: end })
+      .andWhere('reservation.startTime < :endTime', { endTime })
       .andWhere('reservation.endTime > :startTime', { startTime })
       .getOne();
 
     if (conflictingReservation) {
+      const otherBulkConflicts = await this.bulkBorrowingRepository
+        .createQueryBuilder('bulk')
+        .innerJoin('bulk.items', 'item')
+        .where('item.instrumentId = :instrumentId', { instrumentId })
+        .andWhere('bulk.id != :excludeBulkId', { excludeBulkId })
+        .andWhere('bulk.status IN (:...statuses)', { statuses: [BulkBorrowingStatus.LOCKED, BulkBorrowingStatus.APPROVED, BulkBorrowingStatus.PENDING_APPROVAL] })
+        .andWhere('bulk.startTime < :endTime', { endTime })
+        .andWhere('bulk.endTime > :startTime', { startTime })
+        .getCount();
+
+      if (otherBulkConflicts > 0) {
+        return this.bulkBorrowingConflictRepository.create({
+          bulkBorrowingId: excludeBulkId,
+          conflictType: ConflictType.RESERVATION_CONFLICT,
+          severity: ConflictSeverity.WARNING,
+          description: `该乐器在所选时间段与其他社团或活动预约冲突`,
+          instrumentId,
+          suggestion: '调整借用时间或更换乐器',
+        });
+      }
+
       return this.bulkBorrowingConflictRepository.create({
         bulkBorrowingId: excludeBulkId,
         conflictType: ConflictType.RESERVATION_CONFLICT,
@@ -166,15 +221,14 @@ export class BulkBorrowingService {
   private async detectRoomConflict(
     roomId: number,
     startTime: Date,
-    endTime: number | Date,
+    endTime: Date,
     excludeBulkId: number,
   ): Promise<BulkBorrowingConflict | null> {
-    const end = endTime instanceof Date ? endTime : new Date(endTime);
-    const conflictingReservation = await this.bulkBorrowingRepository.manager.getRepository('Reservation')
+    const conflictingReservation = await this.reservationRepository
       .createQueryBuilder('reservation')
       .where('reservation.roomId = :roomId', { roomId })
       .andWhere('reservation.status IN (:...statuses)', { statuses: [ReservationStatus.APPROVED, ReservationStatus.BORROWED] })
-      .andWhere('reservation.startTime < :endTime', { endTime: end })
+      .andWhere('reservation.startTime < :endTime', { endTime })
       .andWhere('reservation.endTime > :startTime', { startTime })
       .getOne();
 

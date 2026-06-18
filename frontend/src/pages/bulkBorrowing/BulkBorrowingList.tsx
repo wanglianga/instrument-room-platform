@@ -59,9 +59,19 @@ const mockBulkBorrowings: BulkBorrowing[] = [
         bulkBorrowingId: 1,
         conflictType: 'reservation_conflict',
         severity: 'warning',
-        description: '小提琴在4月3日已有其他社团预约',
+        description: '斯特拉迪瓦里小提琴在4月3日已有弦乐社团预约排练',
         instrumentId: 2,
-        suggestion: '调整借用时间或与社团协调',
+        suggestion: '调整借用时间或与弦乐社团协调',
+        resolved: false,
+      },
+      {
+        id: 2,
+        bulkBorrowingId: 1,
+        conflictType: 'teacher_approval_required',
+        severity: 'info',
+        description: '斯特拉迪瓦里小提琴为贵重乐器，需指导老师李老师审批',
+        instrumentId: 2,
+        suggestion: '已通知指导老师，待审批通过后可继续',
         resolved: false,
       },
     ],
@@ -111,6 +121,240 @@ const mockBulkBorrowings: BulkBorrowing[] = [
   },
 ]
 
+interface MockInstrument {
+  id: number
+  name: string
+  category: string
+  status: 'available' | 'borrowed' | 'in_repair' | 'sealed' | 'in_performance'
+  totalQuantity: number
+  availableQuantity: number
+  isValuable: boolean
+  currentBorrower?: string
+  expectedReturnDate?: string
+  repairNote?: string
+  sealedReason?: string
+  teacherId?: number
+  teacherName?: string
+}
+
+const mockInstruments: MockInstrument[] = [
+  { id: 1, name: '雅马哈三角钢琴', category: '键盘', status: 'available', totalQuantity: 2, availableQuantity: 1, isValuable: true, teacherId: 3, teacherName: '李老师' },
+  { id: 2, name: '斯特拉迪瓦里小提琴', category: '弦乐', status: 'available', totalQuantity: 5, availableQuantity: 3, isValuable: true, teacherId: 3, teacherName: '李老师' },
+  { id: 3, name: '雅马哈萨克斯', category: '管乐', status: 'in_repair', totalQuantity: 3, availableQuantity: 0, isValuable: false, repairNote: '按键损坏待修', teacherId: 3, teacherName: '李老师' },
+  { id: 4, name: '大提琴', category: '弦乐', status: 'available', totalQuantity: 4, availableQuantity: 2, isValuable: false, teacherId: 3, teacherName: '李老师' },
+  { id: 5, name: '雅马哈电子琴', category: '键盘', status: 'available', totalQuantity: 6, availableQuantity: 5, isValuable: false, teacherId: 3, teacherName: '李老师' },
+  { id: 6, name: '长笛', category: '管乐', status: 'sealed', totalQuantity: 4, availableQuantity: 0, isValuable: false, sealedReason: '夏季封存防潮' },
+  { id: 7, name: '架子鼓', category: '打击乐', status: 'borrowed', totalQuantity: 1, availableQuantity: 0, isValuable: false, currentBorrower: '张小明', expectedReturnDate: '2024-04-10' },
+  { id: 8, name: '古典吉他', category: '弦乐', status: 'available', totalQuantity: 5, availableQuantity: 5, isValuable: false },
+  { id: 9, name: '小提琴（练习）', category: '弦乐', status: 'available', totalQuantity: 10, availableQuantity: 10, isValuable: false },
+  { id: 10, name: '中提琴', category: '弦乐', status: 'in_performance', totalQuantity: 3, availableQuantity: 0, isValuable: false },
+]
+
+const mockRooms: { id: number; name: string; status: string }[] = [
+  { id: 1, name: 'A-101 钢琴房', status: 'available' },
+  { id: 2, name: 'A-102 钢琴房', status: 'available' },
+  { id: 3, name: 'B-201 综合练习室', status: 'maintenance' },
+  { id: 4, name: 'B-202 综合练习室', status: 'available' },
+]
+
+const keywordInstrumentMap: Record<string, MockInstrument> = {
+  '小提琴': { id: 2, name: '斯特拉迪瓦里小提琴', category: '弦乐', status: 'available', totalQuantity: 5, availableQuantity: 3, isValuable: true, teacherId: 3, teacherName: '李老师' },
+  '萨克斯': { id: 3, name: '雅马哈萨克斯', category: '管乐', status: 'in_repair', totalQuantity: 3, availableQuantity: 0, isValuable: false, repairNote: '按键损坏待修' },
+  '电子琴': { id: 5, name: '雅马哈电子琴', category: '键盘', status: 'available', totalQuantity: 6, availableQuantity: 5, isValuable: false },
+  '钢琴': { id: 1, name: '雅马哈三角钢琴', category: '键盘', status: 'available', totalQuantity: 2, availableQuantity: 1, isValuable: true, teacherId: 3, teacherName: '李老师' },
+  '架子鼓': { id: 7, name: '架子鼓', category: '打击乐', status: 'borrowed', totalQuantity: 1, availableQuantity: 0, isValuable: false },
+  '大提琴': { id: 4, name: '大提琴', category: '弦乐', status: 'available', totalQuantity: 4, availableQuantity: 2, isValuable: false },
+  '长笛': { id: 6, name: '长笛', category: '管乐', status: 'sealed', totalQuantity: 4, availableQuantity: 0, isValuable: false, sealedReason: '夏季封存防潮' },
+  '吉他': { id: 8, name: '古典吉他', category: '弦乐', status: 'available', totalQuantity: 5, availableQuantity: 5, isValuable: false },
+  '打击乐': { id: 7, name: '架子鼓', category: '打击乐', status: 'borrowed', totalQuantity: 1, availableQuantity: 0, isValuable: false },
+}
+
+const keywordRoomMap: Record<string, { id: number; name: string }> = {
+  '综合练习室': { id: 3, name: 'B-201 综合练习室' },
+  '钢琴房': { id: 1, name: 'A-101 钢琴房' },
+  '琴房': { id: 1, name: 'A-101 钢琴房' },
+  '排练室': { id: 3, name: 'B-201 综合练习室' },
+}
+
+function parseBorrowingList(borrowingList: string): { instrumentItems: BulkBorrowingItem[]; roomItems: BulkBorrowingItem[] } {
+  const instrumentItems: BulkBorrowingItem[] = []
+  const roomItems: BulkBorrowingItem[] = []
+  let itemIdCounter = 10000
+
+  const patterns = [
+    /([\u4e00-\u9fa5a-zA-Z]+)[x×](\d+)/g,
+    /(\d+)([台把只支个])[\u4e00-\u9fa5a-zA-Z]+/g,
+  ]
+
+  const entries: { keyword: string; quantity: number }[] = []
+  const parts = borrowingList.split(/[,，、\n;；]/).filter(p => p.trim())
+
+  for (const part of parts) {
+    const trimmed = part.trim()
+    const match1 = trimmed.match(/^([\u4e00-\u9fa5a-zA-Z]+)[x×\*]\s*(\d+)$/)
+    const match2 = trimmed.match(/^(\d+)\s*[台把只支个台套]\s*([\u4e00-\u9fa5a-zA-Z]+)$/)
+
+    if (match1) {
+      entries.push({ keyword: match1[1], quantity: parseInt(match1[2]) })
+    } else if (match2) {
+      entries.push({ keyword: match2[2], quantity: parseInt(match2[1]) })
+    }
+  }
+
+  for (const entry of entries) {
+    let matched = false
+
+    for (const keyword in keywordInstrumentMap) {
+      if (entry.keyword.includes(keyword) || keyword.includes(entry.keyword)) {
+        const inst = keywordInstrumentMap[keyword]
+        instrumentItems.push({
+          id: itemIdCounter++,
+          bulkBorrowingId: 0,
+          instrumentId: inst.id,
+          instrumentName: inst.name,
+          quantity: entry.quantity,
+          locked: false,
+        })
+        matched = true
+        break
+      }
+    }
+
+    if (!matched) {
+      for (const keyword in keywordRoomMap) {
+        if (entry.keyword.includes(keyword) || keyword.includes(entry.keyword)) {
+          const room = keywordRoomMap[keyword]
+          roomItems.push({
+            id: itemIdCounter++,
+            bulkBorrowingId: 0,
+            roomId: room.id,
+            roomName: room.name,
+            quantity: entry.quantity,
+            locked: false,
+          })
+          matched = true
+          break
+        }
+      }
+    }
+  }
+
+  return { instrumentItems, roomItems }
+}
+
+function generateConflicts(items: BulkBorrowingItem[], startTime: string, endTime: string): BulkBorrowingConflict[] {
+  const conflicts: BulkBorrowingConflict[] = []
+  let conflictIdCounter = 10000
+
+  for (const item of items) {
+    if (item.instrumentId) {
+      const inst = mockInstruments.find(i => i.id === item.instrumentId)
+      if (!inst) continue
+
+      if (inst.status === 'in_repair') {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'instrument_in_repair',
+          severity: 'error',
+          description: `"${inst.name}"正在维修中，无法借用（${inst.repairNote || '原因待查'}）`,
+          instrumentId: item.instrumentId,
+          suggestion: '更换其他同类乐器或等待维修完成',
+          resolved: false,
+        })
+      } else if (inst.status === 'sealed') {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'instrument_sealed',
+          severity: 'error',
+          description: `"${inst.name}"已封存（${inst.sealedReason || '原因待查'}），无法借用`,
+          instrumentId: item.instrumentId,
+          suggestion: '联系管理员解除封存或更换乐器',
+          resolved: false,
+        })
+      } else if (inst.status === 'borrowed') {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'instrument_unavailable',
+          severity: 'warning',
+          description: `"${inst.name}"当前已被${inst.currentBorrower || '他人'}借出，预计${inst.expectedReturnDate || '未知时间'}归还`,
+          instrumentId: item.instrumentId,
+          suggestion: '确认归还时间或更换其他同类乐器',
+          resolved: false,
+        })
+      } else if (inst.status === 'in_performance') {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'instrument_unavailable',
+          severity: 'warning',
+          description: `"${inst.name}"正在演出使用中`,
+          instrumentId: item.instrumentId,
+          suggestion: '确认演出结束时间或更换乐器',
+          resolved: false,
+        })
+      } else if (inst.availableQuantity < item.quantity) {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'instrument_unavailable',
+          severity: 'warning',
+          description: `"${inst.name}"库存不足：需求${item.quantity}件，可借${inst.availableQuantity}件`,
+          instrumentId: item.instrumentId,
+          suggestion: `减少借用数量至${inst.availableQuantity}件，或使用练习用替代乐器`,
+          resolved: false,
+        })
+      }
+
+      if (inst.isValuable) {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'teacher_approval_required',
+          severity: 'info',
+          description: `"${inst.name}"为贵重乐器，需指导老师${inst.teacherName || '指定老师'}审批`,
+          instrumentId: item.instrumentId,
+          suggestion: '已提交指导老师审批，待通过后可继续',
+          resolved: false,
+        })
+      }
+
+      if (inst.status === 'available' && inst.availableQuantity >= item.quantity && inst.id === 2) {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'reservation_conflict',
+          severity: 'warning',
+          description: `"${inst.name}"在所选时间段内与弦乐社团排练预约冲突`,
+          instrumentId: item.instrumentId,
+          suggestion: '调整借用时间或与弦乐社团协调使用时段',
+          resolved: false,
+        })
+      }
+    }
+
+    if (item.roomId) {
+      const room = mockRooms.find(r => r.id === item.roomId)
+      if (room && room.status !== 'available') {
+        conflicts.push({
+          id: conflictIdCounter++,
+          bulkBorrowingId: 0,
+          conflictType: 'room_conflict',
+          severity: 'error',
+          description: `"${room.name}"当前处于${room.status === 'maintenance' ? '维护中' : '使用中'}状态`,
+          roomId: item.roomId,
+          suggestion: '更换其他琴房或调整使用时间',
+          resolved: false,
+        })
+      }
+    }
+  }
+
+  return conflicts
+}
+
 const BulkBorrowingList = () => {
   const [data, setData] = useState<BulkBorrowing[]>(mockBulkBorrowings)
   const [modalVisible, setModalVisible] = useState(false)
@@ -150,19 +394,24 @@ const BulkBorrowingList = () => {
         startTime: values.timeRange?.[0]?.toISOString(),
         endTime: values.timeRange?.[1]?.toISOString(),
       }
+
+      const { instrumentItems, roomItems } = parseBorrowingList(values.borrowingList)
+      const allItems = [...instrumentItems, ...roomItems]
+      const conflicts = generateConflicts(allItems, formattedValues.startTime, formattedValues.endTime)
+
       const newItem: BulkBorrowing = {
         ...formattedValues,
         id: Date.now(),
         status: 'draft',
         organizerId: 5,
         organizerName: '赵演出',
-        items: [],
-        conflicts: [],
+        items: allItems,
+        conflicts,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
       setData([newItem, ...data])
-      message.success('批量借用申请已创建')
+      message.success(`批量借用申请已创建，自动解析出${allItems.length}项资源，检测到${conflicts.length}个冲突`)
       setModalVisible(false)
     } catch (error) {
       console.error('Validation failed:', error)
@@ -170,26 +419,16 @@ const BulkBorrowingList = () => {
   }
 
   const handleDetectConflicts = (record: BulkBorrowing) => {
+    const newConflicts = generateConflicts(record.items, record.startTime, record.endTime)
     setData(data.map((item) =>
       item.id === record.id
-        ? {
-            ...item,
-            conflicts: [
-              ...item.conflicts,
-              {
-                id: Date.now(),
-                bulkBorrowingId: item.id,
-                conflictType: 'reservation_conflict' as const,
-                severity: 'warning' as const,
-                description: '模拟检测到冲突：所选时间段内存在预约重叠',
-                suggestion: '建议调整时间或更换资源',
-                resolved: false,
-              },
-            ],
-          }
+        ? { ...item, conflicts: newConflicts }
         : item
     ))
-    message.info('冲突检测完成，请查看冲突列表')
+    const errorCount = newConflicts.filter(c => c.severity === 'error').length
+    const warningCount = newConflicts.filter(c => c.severity === 'warning').length
+    const infoCount = newConflicts.filter(c => c.severity === 'info').length
+    message.info(`冲突检测完成：${errorCount}个严重，${warningCount}个警告，${infoCount}个提示`)
   }
 
   const handleSubmitForApproval = (record: BulkBorrowing) => {

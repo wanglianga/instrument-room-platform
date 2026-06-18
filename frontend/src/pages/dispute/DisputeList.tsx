@@ -76,7 +76,7 @@ const mockDisputes: ReturnDispute[] = [
     status: 'pending',
     description: '电子琴键盘区域有明显受潮痕迹，部分按键失灵',
     instrumentId: 5,
-    instrumentName: '电子琴',
+    instrumentName: '雅马哈电子琴',
     reservationId: 3,
     registeredById: 1,
     registeredByName: '管理员',
@@ -111,6 +111,24 @@ const mockDisputes: ReturnDispute[] = [
     updatedAt: '2024-04-03T16:00:00Z',
   },
 ]
+
+const instrumentMap: Record<number, string> = {
+  1: '雅马哈三角钢琴',
+  2: '斯特拉迪瓦里小提琴',
+  3: '萨克斯',
+  4: '大提琴',
+  5: '雅马哈电子琴',
+  6: '长笛',
+}
+
+const checkoutPhotoMap: Record<number, string> = {
+  1: 'piano-checkout-default.jpg',
+  2: 'violin-checkout-default.jpg',
+  3: 'saxophone-checkout-default.jpg',
+  4: 'cello-checkout-default.jpg',
+  5: 'keyboard-checkout-default.jpg',
+  6: 'flute-checkout-default.jpg',
+}
 
 const DisputeList = () => {
   const [data, setData] = useState<ReturnDispute[]>(mockDisputes)
@@ -150,9 +168,13 @@ const DisputeList = () => {
   const handleCreateSubmit = async () => {
     try {
       const values = await createForm.validateFields()
+      const instrumentName = instrumentMap[values.instrumentId] || `乐器#${values.instrumentId}`
+      const checkoutPhotos = checkoutPhotoMap[values.instrumentId] || ''
       const newItem: ReturnDispute = {
         ...values,
         id: Date.now(),
+        instrumentName,
+        checkoutPhotos,
         status: 'pending',
         registeredById: 1,
         registeredByName: '管理员',
@@ -508,12 +530,20 @@ const DisputeList = () => {
 
             {currentItem.checkoutPhotos && (
               <Card size="small" title="借出前验收照片（追溯）" style={{ marginBottom: 16 }}>
-                <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 8 }}>
+                <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
                   以下为管理员借出时拍摄的验收照片，用于比对归还时状态
                 </div>
-                <Image.PreviewGroup>
-                  <Image width={80} height={80} src="https://via.placeholder.com/80" />
-                </Image.PreviewGroup>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <Image.PreviewGroup>
+                    <Image width={80} height={80} src="https://via.placeholder.com/80/1677ff/ffffff?text=正面" />
+                    <Image width={80} height={80} src="https://via.placeholder.com/80/52c41a/ffffff?text=背面" />
+                    <Image width={80} height={80} src="https://via.placeholder.com/80/faad14/ffffff?text=侧面" />
+                    <Image width={80} height={80} src="https://via.placeholder.com/80/722ed1/ffffff?text=细节" />
+                  </Image.PreviewGroup>
+                </div>
+                <div style={{ fontSize: 11, color: '#bfbfbf', marginTop: 8 }}>
+                  照片拍摄时间：借出当日 09:30 · 拍摄人：管理员
+                </div>
               </Card>
             )}
 
